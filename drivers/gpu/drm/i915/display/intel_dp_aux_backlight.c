@@ -628,10 +628,6 @@ int intel_dp_aux_init_backlight_funcs(struct intel_connector *connector)
 	struct intel_dp *intel_dp = enc_to_intel_dp(connector->encoder);
 	struct drm_i915_private *i915 = dp_to_i915(intel_dp);
 	bool try_intel_interface = false, try_vesa_interface = false;
-	bool force_dpcd;
-
-	force_dpcd = drm_dp_has_quirk(&intel_dp->desc, intel_dp->edid_quirks,
-				      DP_QUIRK_FORCE_DPCD_BACKLIGHT);
 
 	/* Check the VBT and user's module parameters to figure out which
 	 * interfaces to probe
@@ -681,11 +677,6 @@ int intel_dp_aux_init_backlight_funcs(struct intel_connector *connector)
 
 	if (try_vesa_interface && intel_dp_aux_supports_vesa_backlight(connector)) {
 		drm_dbg_kms(dev, "Using VESA eDP backlight controls\n");
-		panel->backlight.funcs = &intel_dp_vesa_bl_funcs;
-		return 0;
-	}
-
-	if (force_dpcd) {
 		panel->backlight.funcs = &intel_dp_vesa_bl_funcs;
 		return 0;
 	}
