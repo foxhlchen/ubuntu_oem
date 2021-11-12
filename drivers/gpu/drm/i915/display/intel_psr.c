@@ -22,6 +22,7 @@
  */
 
 #include <drm/drm_atomic_helper.h>
+#include <linux/dmi.h>
 
 #include "display/intel_dp.h"
 
@@ -78,6 +79,22 @@
  * would bring a lot of complexity and most of the moderns systems will only
  * use page flips.
  */
+
+
+struct model_setting {
+	char *vendor;
+	char *product_name;
+	int enable_psr;
+};
+
+static struct model_setting model_settings[] = {
+	{"Dell Inc.", "XPS 15 9560", 1},
+	{"Dell Inc.", "XPS 13 9360", 1},
+	{"Dell Inc.", "XPS 15 9570", 1},
+	{"Dell Inc.", "XPS 13 9370", 1},
+	// represents the end of the array
+	{"", "", -1},
+};
 
 static bool psr_global_enabled(struct drm_i915_private *i915)
 {
@@ -1568,11 +1585,31 @@ void intel_psr_flush(struct drm_i915_private *dev_priv,
  */
 void intel_psr_init(struct drm_i915_private *dev_priv)
 {
+	int model_settings_it = 0;
+	const char *vendor, *product;
+
 	if (!HAS_PSR(dev_priv))
 		return;
 
 	if (!dev_priv->psr.sink_support)
 		return;
+
+	vendor = dmi_get_system_info(DMI_SYS_VENDOR);
+	product = dmi_get_system_info(DMI_PRODUCT_NAME);
+
+	while (vendor && product) {
+		if (!strcmp(model_settings[model_settings_it].vendor, ""))
+			break;
+
+		if (!strcmp(model_settings[model_settings_it].vendor, vendor)
+		   && !strcmp(model_settings[model_settings_it].product_name, product)) {
+			dev_priv->params.enable_psr = model_settings[model_settings_it].enable_psr;
+			break;
+		}
+
+		model_settings_it++;
+	}
+
 
 	if (IS_HASWELL(dev_priv))
 		/*
